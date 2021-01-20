@@ -6,8 +6,36 @@ const fs = require('fs');
 // let data = fs.readFileSync('times.json');
 // let parsedData = JSON.parse(data);
 const config = require('./config');
+const { formatDate } = require('tough-cookie');
 let numData = [];
 const client = new twitter(config);
+
+async function sendTweet(scraped) {
+    let r = Math.floor(Math.random() * scraped.length);
+    numData.push(r);
+    let d = new Date();
+
+    client
+        .post('statuses/update', {
+            status: `${scraped[r].Asukoht}           
+                    ${scraped[r].Esimene}
+                    ${scraped[r].Teine}
+                    ${scraped[r].Kolmas}
+                    ${scraped[r].Link}`,
+        })
+        .then((result) => {
+            console.log(
+                'You successfully tweeted this : "' + result.text + '"'
+            );
+        })
+        .catch((e) => {
+            if (e.errors[0].code == 187) {
+                console.log(`${scraped[r].Asukoht} duplikaat`);
+            } else {
+                console.log(e);
+            }
+        });
+}
 
 async function scrapMnt() {
     let scrapedData = [];
@@ -29,37 +57,12 @@ async function scrapMnt() {
                 Esimene: firstAvailable,
                 Teine: secondAvailable,
                 Kolmas: thirdAvailable,
-                Link:
-                    'https://eteenindus.mnt.ee/public/vabadSoidueksamiajad.xhtml',
+                Link: 'eteenindus.mnt.ee/main.jsf',
             };
             scrapedData.push(tableRow);
         });
 
-        let r = Math.floor(Math.random() * scrapedData.length);
-        numData.push(r);
-        
-
-        client
-            .post('statuses/update', {
-                status: `${scrapedData[r].Asukoht}
-                ${scrapedData[r].Esimene}
-                ${scrapedData[r].Teine}
-                ${scrapedData[r].Kolmas}
-                ${scrapedData[r].Link}`,
-            })
-            .then((result) => {
-                console.log(
-                    'You successfully tweeted this : "' + result.text + '"'
-                );
-            })
-            .catch((e) => {
-                if (e.errors[0].code == 187) {
-                    console.log('duplikaat');
-                    setTimeout(scrapMnt, 20000);
-                } else {
-                    console.log(e);
-                }
-            });
+        sendTweet(scrapedData);
     } catch (error) {
         console.log(error);
     }
